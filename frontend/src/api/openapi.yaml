@@ -1,0 +1,1799 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /api/v1/applications:
+        get:
+            tags:
+                - ApplicationService
+            operationId: ApplicationService_ListApplications
+            parameters:
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListApplicationsResponse'
+        post:
+            tags:
+                - ApplicationService
+            description: Черновик с автозаполнением из данных банка.
+            operationId: ApplicationService_CreateApplication
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateApplicationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+    /api/v1/applications/{applicationId}:
+        get:
+            tags:
+                - ApplicationService
+            operationId: ApplicationService_GetApplication
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+        patch:
+            tags:
+                - ApplicationService
+            description: Меняет поля формы; какие именно — в update_mask (?updateMask=form.inn,form.employees).
+            operationId: ApplicationService_UpdateApplication
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: updateMask
+                  in: query
+                  schema:
+                    type: string
+                    format: field-mask
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ApplicationForm'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+    /api/v1/applications/{applicationId}/accept-counter-offer:
+        post:
+            tags:
+                - ApplicationService
+            operationId: ApplicationService_AcceptCounterOffer
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AcceptCounterOfferRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+    /api/v1/applications/{applicationId}/cancel:
+        post:
+            tags:
+                - ApplicationService
+            operationId: ApplicationService_CancelApplication
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CancelApplicationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+    /api/v1/applications/{applicationId}/schedule:
+        get:
+            tags:
+                - ApplicationService
+            operationId: ApplicationService_GetSchedule
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetScheduleResponse'
+    /api/v1/applications/{applicationId}/sign/confirm:
+        post:
+            tags:
+                - ApplicationService
+            description: 'Идемпотентность: Idempotency-Key.'
+            operationId: ApplicationService_ConfirmSign
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ConfirmSignRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+    /api/v1/applications/{applicationId}/sign/otp:
+        post:
+            tags:
+                - ApplicationService
+            operationId: ApplicationService_RequestSignOtp
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RequestSignOtpRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RequestOtpResponse'
+    /api/v1/applications/{applicationId}/submit:
+        post:
+            tags:
+                - ApplicationService
+            description: 'Идемпотентность: Idempotency-Key. Запускает пайплайн, дальше статусы приходят по SSE /events.'
+            operationId: ApplicationService_SubmitApplication
+            parameters:
+                - name: applicationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SubmitApplicationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Application'
+    /api/v1/auth/demo-personas:
+        get:
+            tags:
+                - AuthService
+            description: 'Только DEMO_MODE: чипы персон на экране входа.'
+            operationId: AuthService_ListDemoPersonas
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListDemoPersonasResponse'
+    /api/v1/auth/logout:
+        post:
+            tags:
+                - AuthService
+            operationId: AuthService_Logout
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/LogoutRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/LogoutResponse'
+    /api/v1/auth/otp:
+        post:
+            tags:
+                - AuthService
+            operationId: AuthService_RequestOtp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RequestOtpRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RequestOtpResponse'
+    /api/v1/auth/verify:
+        post:
+            tags:
+                - AuthService
+            description: |-
+                Cookie `session` ставится через grpc.SetHeader(ctx, "x-set-cookie", …) +
+                 runtime.WithForwardResponseOption, который превращает его в Set-Cookie.
+            operationId: AuthService_VerifyOtp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/VerifyOtpRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/VerifyOtpResponse'
+    /api/v1/chat/sessions:
+        get:
+            tags:
+                - ChatService
+            operationId: ChatService_ListSessions
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListSessionsResponse'
+        post:
+            tags:
+                - ChatService
+            operationId: ChatService_CreateSession
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateSessionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChatSession'
+    /api/v1/chat/sessions/{sessionId}/messages:
+        get:
+            tags:
+                - ChatService
+            description: История с виджетами.
+            operationId: ChatService_GetMessages
+            parameters:
+                - name: sessionId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetMessagesResponse'
+    /api/v1/consents:
+        get:
+            tags:
+                - ConsentService
+            operationId: ConsentService_ListDataSources
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListDataSourcesResponse'
+    /api/v1/consents/{source}:
+        post:
+            tags:
+                - ConsentService
+            description: 'Идемпотентность: заголовок Idempotency-Key.'
+            operationId: ConsentService_GrantConsent
+            parameters:
+                - name: source
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GrantConsentRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GrantConsentResponse'
+        delete:
+            tags:
+                - ConsentService
+            operationId: ConsentService_RevokeConsent
+            parameters:
+                - name: source
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RevokeConsentResponse'
+    /api/v1/dashboard:
+        get:
+            tags:
+                - ClientService
+            description: Всё для главной одним запросом.
+            operationId: ClientService_GetDashboard
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Dashboard'
+    /api/v1/demo/reset:
+        post:
+            tags:
+                - DemoService
+            description: 'Сбрасывает демо-мир: заявки, чаты, согласия, выданные кредиты.'
+            operationId: DemoService_Reset
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ResetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ResetResponse'
+    /api/v1/documents:
+        get:
+            tags:
+                - DocumentService
+            operationId: DocumentService_ListDocuments
+            parameters:
+                - name: applicationId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListDocumentsResponse'
+    /api/v1/documents/{documentId}:
+        get:
+            tags:
+                - DocumentService
+            operationId: DocumentService_GetDocument
+            parameters:
+                - name: documentId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Document'
+    /api/v1/finance/cashflow:
+        get:
+            tags:
+                - CashflowService
+            operationId: CashflowService_GetCashflow
+            parameters:
+                - name: horizonDays
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Cashflow'
+    /api/v1/me:
+        get:
+            tags:
+                - AuthService
+            operationId: AuthService_GetMe
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetMeResponse'
+    /api/v1/offers:
+        get:
+            tags:
+                - OfferService
+            operationId: OfferService_ListOffers
+            parameters:
+                - name: purpose
+                  in: query
+                  schema:
+                    enum:
+                        - PURPOSE_UNSPECIFIED
+                        - PURPOSE_EQUIPMENT
+                        - PURPOSE_VEHICLE
+                        - PURPOSE_WORKING_CAPITAL
+                        - PURPOSE_INVENTORY_SEASON
+                        - PURPOSE_CASH_GAP
+                        - PURPOSE_TENDER
+                        - PURPOSE_REFINANCE
+                    type: string
+                    format: enum
+                - name: amountKop
+                  in: query
+                  schema:
+                    type: string
+                - name: termMonths
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListOffersResponse'
+    /api/v1/offers/catalog:
+        get:
+            tags:
+                - OfferService
+            operationId: OfferService_GetCatalog
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetCatalogResponse'
+    /api/v1/offers/gov-support:
+        get:
+            tags:
+                - OfferService
+            operationId: OfferService_GetGovSupport
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetGovSupportResponse'
+    /api/v1/offers/simulate:
+        post:
+            tags:
+                - OfferService
+            operationId: OfferService_Simulate
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SimulateRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SimulateResponse'
+    /api/v1/profile:
+        get:
+            tags:
+                - ClientService
+            operationId: ClientService_GetProfile
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BusinessProfile'
+components:
+    schemas:
+        AcceptCounterOfferRequest:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+        Application:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+                number:
+                    type: string
+                productId:
+                    type: string
+                productName:
+                    type: string
+                status:
+                    enum:
+                        - APPLICATION_STATUS_UNSPECIFIED
+                        - APPLICATION_STATUS_DRAFT
+                        - APPLICATION_STATUS_SUBMITTED
+                        - APPLICATION_STATUS_DATA_CHECK
+                        - APPLICATION_STATUS_SCORING
+                        - APPLICATION_STATUS_DECISION
+                        - APPLICATION_STATUS_APPROVED
+                        - APPLICATION_STATUS_COUNTER_OFFER
+                        - APPLICATION_STATUS_MANUAL_REVIEW
+                        - APPLICATION_STATUS_DECLINED
+                        - APPLICATION_STATUS_SIGNED
+                        - APPLICATION_STATUS_DISBURSED
+                        - APPLICATION_STATUS_CANCELLED
+                    type: string
+                    format: enum
+                amountKop:
+                    type: string
+                termMonths:
+                    type: integer
+                    format: int32
+                scheduleType:
+                    enum:
+                        - SCHEDULE_TYPE_UNSPECIFIED
+                        - SCHEDULE_TYPE_ANNUITY
+                        - SCHEDULE_TYPE_DIFFERENTIATED
+                        - SCHEDULE_TYPE_SEASONAL
+                    type: string
+                    format: enum
+                rateBp:
+                    type: integer
+                    format: int32
+                monthlyPaymentKop:
+                    type: string
+                form:
+                    $ref: '#/components/schemas/ApplicationForm'
+                autofillRatio:
+                    type: number
+                    format: double
+                decision:
+                    $ref: '#/components/schemas/Decision'
+                timeline:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TimelineStep'
+                documentIds:
+                    type: array
+                    items:
+                        type: string
+                purpose:
+                    enum:
+                        - PURPOSE_UNSPECIFIED
+                        - PURPOSE_EQUIPMENT
+                        - PURPOSE_VEHICLE
+                        - PURPOSE_WORKING_CAPITAL
+                        - PURPOSE_INVENTORY_SEASON
+                        - PURPOSE_CASH_GAP
+                        - PURPOSE_TENDER
+                        - PURPOSE_REFINANCE
+                    type: string
+                    format: enum
+                origin:
+                    enum:
+                        - APPLICATION_ORIGIN_UNSPECIFIED
+                        - APPLICATION_ORIGIN_CHAT
+                        - APPLICATION_ORIGIN_CREDITS
+                        - APPLICATION_ORIGIN_DASHBOARD
+                    type: string
+                    format: enum
+                createdAt:
+                    type: string
+                    format: date-time
+        ApplicationDraftWidget:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+                autofillRatio:
+                    type: number
+                    format: double
+                summary:
+                    type: string
+        ApplicationForm:
+            type: object
+            properties:
+                organizationName:
+                    $ref: '#/components/schemas/FormField'
+                inn:
+                    $ref: '#/components/schemas/FormField'
+                okved:
+                    $ref: '#/components/schemas/FormField'
+                registrationDate:
+                    $ref: '#/components/schemas/FormField'
+                avgMonthlyRevenue:
+                    $ref: '#/components/schemas/FormField'
+                employees:
+                    $ref: '#/components/schemas/FormField'
+                purposeText:
+                    $ref: '#/components/schemas/FormField'
+                supplierName:
+                    $ref: '#/components/schemas/FormField'
+                supplierInn:
+                    $ref: '#/components/schemas/FormField'
+        ApplicationSummary:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+                number:
+                    type: string
+                productName:
+                    type: string
+                status:
+                    enum:
+                        - APPLICATION_STATUS_UNSPECIFIED
+                        - APPLICATION_STATUS_DRAFT
+                        - APPLICATION_STATUS_SUBMITTED
+                        - APPLICATION_STATUS_DATA_CHECK
+                        - APPLICATION_STATUS_SCORING
+                        - APPLICATION_STATUS_DECISION
+                        - APPLICATION_STATUS_APPROVED
+                        - APPLICATION_STATUS_COUNTER_OFFER
+                        - APPLICATION_STATUS_MANUAL_REVIEW
+                        - APPLICATION_STATUS_DECLINED
+                        - APPLICATION_STATUS_SIGNED
+                        - APPLICATION_STATUS_DISBURSED
+                        - APPLICATION_STATUS_CANCELLED
+                    type: string
+                    format: enum
+                amountKop:
+                    type: string
+            description: Короткая форма для дашборда и списков.
+        Banner:
+            type: object
+            properties:
+                title:
+                    type: string
+                text:
+                    type: string
+                maxAmountKop:
+                    type: string
+        BusinessProfile:
+            type: object
+            properties:
+                name:
+                    type: string
+                brand:
+                    type: string
+                inn:
+                    type: string
+                legalForm:
+                    type: string
+                okvedMain:
+                    type: string
+                regionCode:
+                    type: string
+                taxRegime:
+                    type: string
+                mspCategory:
+                    type: string
+                businessAgeMonths:
+                    type: integer
+                    format: int32
+                employees:
+                    type: integer
+                    format: int32
+                registrationDate:
+                    type: string
+        CancelApplicationRequest:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+        CashGap:
+            type: object
+            properties:
+                date:
+                    type: string
+                daysAhead:
+                    type: integer
+                    format: int32
+                amountKop:
+                    type: string
+                causes:
+                    type: array
+                    items:
+                        type: string
+                suggestedProductId:
+                    type: string
+                suggestedAmountKop:
+                    type: string
+        Cashflow:
+            type: object
+            properties:
+                asOf:
+                    type: string
+                history:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/HistoryPoint'
+                forecast:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ForecastPoint'
+                gaps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CashGap'
+                recurring:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RecurringPayment'
+                modelVersion:
+                    type: string
+                backtestWape:
+                    type: number
+                    format: double
+            description: |-
+                Cashflow — факт за 90 дней, прогноз, найденные разрывы и регулярные платежи.
+                 Виджет ассистента `cashflow_chart` использует это же сообщение.
+        ChatMessage:
+            type: object
+            properties:
+                messageId:
+                    type: string
+                role:
+                    enum:
+                        - CHAT_ROLE_UNSPECIFIED
+                        - CHAT_ROLE_USER
+                        - CHAT_ROLE_ASSISTANT
+                    type: string
+                    format: enum
+                text:
+                    type: string
+                widgets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Widget'
+                createdAt:
+                    type: string
+                    format: date-time
+                trace:
+                    $ref: '#/components/schemas/Trace'
+        ChatSession:
+            type: object
+            properties:
+                sessionId:
+                    type: string
+                title:
+                    type: string
+                needs:
+                    $ref: '#/components/schemas/Needs'
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+        ComparisonRow:
+            type: object
+            properties:
+                title:
+                    type: string
+                values:
+                    type: array
+                    items:
+                        type: string
+                bestIndex:
+                    type: integer
+                    format: int32
+        ConfirmSignRequest:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+                otpId:
+                    type: string
+                code:
+                    type: string
+        ConsentEffect:
+            type: object
+            properties:
+                maxAmountDeltaKop:
+                    type: string
+                rateDeltaBp:
+                    type: integer
+                    format: int32
+                approvalProbDelta:
+                    type: number
+                    format: double
+        ConsentRequestWidget:
+            type: object
+            properties:
+                source:
+                    type: string
+                title:
+                    type: string
+                benefit:
+                    type: string
+        CreateApplicationRequest:
+            type: object
+            properties:
+                productId:
+                    type: string
+                amountKop:
+                    type: string
+                termMonths:
+                    type: integer
+                    format: int32
+                scheduleType:
+                    enum:
+                        - SCHEDULE_TYPE_UNSPECIFIED
+                        - SCHEDULE_TYPE_ANNUITY
+                        - SCHEDULE_TYPE_DIFFERENTIATED
+                        - SCHEDULE_TYPE_SEASONAL
+                    type: string
+                    format: enum
+                purpose:
+                    enum:
+                        - PURPOSE_UNSPECIFIED
+                        - PURPOSE_EQUIPMENT
+                        - PURPOSE_VEHICLE
+                        - PURPOSE_WORKING_CAPITAL
+                        - PURPOSE_INVENTORY_SEASON
+                        - PURPOSE_CASH_GAP
+                        - PURPOSE_TENDER
+                        - PURPOSE_REFINANCE
+                    type: string
+                    format: enum
+                origin:
+                    enum:
+                        - APPLICATION_ORIGIN_UNSPECIFIED
+                        - APPLICATION_ORIGIN_CHAT
+                        - APPLICATION_ORIGIN_CREDITS
+                        - APPLICATION_ORIGIN_DASHBOARD
+                    type: string
+                    format: enum
+        CreateSessionRequest:
+            type: object
+            properties: {}
+        Dashboard:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/BusinessProfile'
+                metrics:
+                    $ref: '#/components/schemas/Metrics'
+                health:
+                    $ref: '#/components/schemas/Health'
+                banner:
+                    $ref: '#/components/schemas/Banner'
+                cashGap:
+                    $ref: '#/components/schemas/CashGap'
+                topOffers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Offer'
+                applications:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ApplicationSummary'
+                dataBoost:
+                    $ref: '#/components/schemas/DataBoost'
+        DataBoost:
+            type: object
+            properties:
+                source:
+                    type: string
+                title:
+                    type: string
+                maxAmountDeltaKop:
+                    type: string
+                rateDeltaBp:
+                    type: integer
+                    format: int32
+        DataSource:
+            type: object
+            properties:
+                source:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                tier:
+                    type: integer
+                    format: int32
+                requiresConsent:
+                    type: boolean
+                status:
+                    enum:
+                        - CONSENT_STATUS_UNSPECIFIED
+                        - CONSENT_STATUS_NOT_GRANTED
+                        - CONSENT_STATUS_GRANTED
+                        - CONSENT_STATUS_REVOKED
+                    type: string
+                    format: enum
+                whatWeUse:
+                    type: array
+                    items:
+                        type: string
+                expectedEffect:
+                    $ref: '#/components/schemas/ConsentEffect'
+                grantedAt:
+                    type: string
+                    format: date-time
+                expiresAt:
+                    type: string
+                    format: date-time
+        Decision:
+            type: object
+            properties:
+                outcome:
+                    enum:
+                        - DECISION_OUTCOME_UNSPECIFIED
+                        - DECISION_OUTCOME_APPROVED
+                        - DECISION_OUTCOME_COUNTER_OFFER
+                        - DECISION_OUTCOME_MANUAL_REVIEW
+                        - DECISION_OUTCOME_DECLINED
+                    type: string
+                    format: enum
+                approvedAmountKop:
+                    type: string
+                rateBp:
+                    type: integer
+                    format: int32
+                monthlyPaymentKop:
+                    type: string
+                reasons:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Factor'
+                tips:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Tip'
+                conditions:
+                    type: array
+                    items:
+                        type: string
+                modelVersion:
+                    type: string
+        DecisionFactorsWidget:
+            type: object
+            properties:
+                factors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Factor'
+                tips:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Tip'
+        DemoPersona:
+            type: object
+            properties:
+                phone:
+                    type: string
+                title:
+                    type: string
+                subtitle:
+                    type: string
+        Document:
+            type: object
+            properties:
+                documentId:
+                    type: string
+                kind:
+                    enum:
+                        - DOCUMENT_KIND_UNSPECIFIED
+                        - DOCUMENT_KIND_INVOICE
+                        - DOCUMENT_KIND_SPEC
+                        - DOCUMENT_KIND_CONTRACT
+                        - DOCUMENT_KIND_OTHER
+                    type: string
+                    format: enum
+                filename:
+                    type: string
+                mime:
+                    type: string
+                sizeBytes:
+                    type: string
+                applicationId:
+                    type: string
+                extractStatus:
+                    enum:
+                        - EXTRACT_STATUS_UNSPECIFIED
+                        - EXTRACT_STATUS_PENDING
+                        - EXTRACT_STATUS_DONE
+                        - EXTRACT_STATUS_FAILED
+                        - EXTRACT_STATUS_NOT_APPLICABLE
+                    type: string
+                    format: enum
+                extracted:
+                    $ref: '#/components/schemas/ExtractedInvoice'
+                supplierCheck:
+                    $ref: '#/components/schemas/SupplierCheck'
+                createdAt:
+                    type: string
+                    format: date-time
+        ExtractedInvoice:
+            type: object
+            properties:
+                supplierName:
+                    type: string
+                supplierInn:
+                    type: string
+                invoiceNumber:
+                    type: string
+                invoiceDate:
+                    type: string
+                amountKop:
+                    type: string
+                itemsSummary:
+                    type: string
+        Factor:
+            type: object
+            properties:
+                code:
+                    type: string
+                title:
+                    type: string
+                impact:
+                    type: number
+                    format: double
+                direction:
+                    enum:
+                        - DIRECTION_UNSPECIFIED
+                        - DIRECTION_POSITIVE
+                        - DIRECTION_NEGATIVE
+                    type: string
+                    format: enum
+        ForecastPoint:
+            type: object
+            properties:
+                date:
+                    type: string
+                inflowP50Kop:
+                    type: string
+                outflowP50Kop:
+                    type: string
+                balanceP10Kop:
+                    type: string
+                balanceP50Kop:
+                    type: string
+                balanceP90Kop:
+                    type: string
+        FormField:
+            type: object
+            properties:
+                value:
+                    type: string
+                source:
+                    enum:
+                        - FIELD_SOURCE_UNSPECIFIED
+                        - FIELD_SOURCE_USER
+                        - FIELD_SOURCE_EGR
+                        - FIELD_SOURCE_STATEMENT
+                        - FIELD_SOURCE_DOCUMENT
+                        - FIELD_SOURCE_ASSISTANT
+                    type: string
+                    format: enum
+                editable:
+                    type: boolean
+        GetCatalogResponse:
+            type: object
+            properties:
+                products:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Product'
+        GetGovSupportResponse:
+            type: object
+            properties:
+                matches:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GovProgramMatch'
+        GetMeResponse:
+            type: object
+            properties:
+                user:
+                    $ref: '#/components/schemas/User'
+        GetMessagesResponse:
+            type: object
+            properties:
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChatMessage'
+        GetScheduleResponse:
+            type: object
+            properties:
+                schedule:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SchedulePayment'
+        GovProgramMatch:
+            type: object
+            properties:
+                programId:
+                    type: string
+                name:
+                    type: string
+                eligible:
+                    type: boolean
+                reasons:
+                    type: array
+                    items:
+                        type: string
+                rateBp:
+                    type: integer
+                    format: int32
+                savingsVsMarketKop:
+                    type: string
+        GrantConsentRequest:
+            type: object
+            properties:
+                source:
+                    type: string
+                scope:
+                    type: array
+                    items:
+                        type: string
+        GrantConsentResponse:
+            type: object
+            properties:
+                source:
+                    $ref: '#/components/schemas/DataSource'
+                before:
+                    $ref: '#/components/schemas/LimitSnapshot'
+                after:
+                    $ref: '#/components/schemas/LimitSnapshot'
+        Health:
+            type: object
+            properties:
+                score:
+                    type: integer
+                    format: int32
+                label:
+                    type: string
+                tips:
+                    type: array
+                    items:
+                        type: string
+        HistoryPoint:
+            type: object
+            properties:
+                date:
+                    type: string
+                inflowKop:
+                    type: string
+                outflowKop:
+                    type: string
+                balanceKop:
+                    type: string
+        LimitSnapshot:
+            type: object
+            properties:
+                maxAmountKop:
+                    type: string
+                rateBp:
+                    type: integer
+                    format: int32
+                approvalProb:
+                    type: number
+                    format: double
+        ListApplicationsResponse:
+            type: object
+            properties:
+                applications:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Application'
+                nextPageToken:
+                    type: string
+        ListDataSourcesResponse:
+            type: object
+            properties:
+                sources:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DataSource'
+        ListDemoPersonasResponse:
+            type: object
+            properties:
+                personas:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DemoPersona'
+        ListDocumentsResponse:
+            type: object
+            properties:
+                documents:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Document'
+        ListOffersResponse:
+            type: object
+            properties:
+                offers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Offer'
+                unavailable:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UnavailableProduct'
+        ListSessionsResponse:
+            type: object
+            properties:
+                sessions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChatSession'
+        LoanSimulatorWidget:
+            type: object
+            properties:
+                simulation:
+                    $ref: '#/components/schemas/SimulateResponse'
+                product:
+                    $ref: '#/components/schemas/Product'
+            description: Фронт сам двигает слайдеры и зовёт POST /offers/simulate; границы — из product.
+        LogoutRequest:
+            type: object
+            properties: {}
+        LogoutResponse:
+            type: object
+            properties: {}
+        MetricItem:
+            type: object
+            properties:
+                label:
+                    type: string
+                amountKop:
+                    type: string
+                ratio:
+                    type: number
+                    format: double
+                text:
+                    type: string
+                deltaRatio:
+                    type: number
+                    format: double
+        Metrics:
+            type: object
+            properties:
+                revenue30dKop:
+                    type: string
+                revenueGrowthQoq:
+                    type: number
+                    format: double
+                revenueSeries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MonthAmount'
+                balanceKop:
+                    type: string
+                creditLoad:
+                    type: number
+                    format: double
+        MetricsCardWidget:
+            type: object
+            properties:
+                title:
+                    type: string
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/MetricItem'
+        MonthAmount:
+            type: object
+            properties:
+                month:
+                    type: string
+                amountKop:
+                    type: string
+        Needs:
+            type: object
+            properties:
+                goal:
+                    enum:
+                        - PURPOSE_UNSPECIFIED
+                        - PURPOSE_EQUIPMENT
+                        - PURPOSE_VEHICLE
+                        - PURPOSE_WORKING_CAPITAL
+                        - PURPOSE_INVENTORY_SEASON
+                        - PURPOSE_CASH_GAP
+                        - PURPOSE_TENDER
+                        - PURPOSE_REFINANCE
+                    type: string
+                    format: enum
+                goalText:
+                    type: string
+                amountKop:
+                    type: string
+                termMonths:
+                    type: integer
+                    format: int32
+                hasCollateral:
+                    type: boolean
+                urgency:
+                    type: string
+                maxPaymentKop:
+                    type: string
+        Offer:
+            type: object
+            properties:
+                offerId:
+                    type: string
+                productId:
+                    type: string
+                productName:
+                    type: string
+                badge:
+                    enum:
+                        - BADGE_UNSPECIFIED
+                        - BADGE_BEST
+                        - BADGE_ALTERNATIVE
+                        - BADGE_GOV_SUPPORT
+                        - BADGE_PREAPPROVED
+                    type: string
+                    format: enum
+                maxAmountKop:
+                    type: string
+                amountKop:
+                    type: string
+                termMonths:
+                    type: integer
+                    format: int32
+                rateBp:
+                    type: integer
+                    format: int32
+                monthlyPaymentKop:
+                    type: string
+                overpaymentKop:
+                    type: string
+                paymentToRevenue:
+                    type: number
+                    format: double
+                approvalProb:
+                    type: number
+                    format: double
+                decisionTime:
+                    type: string
+                fitReasons:
+                    type: array
+                    items:
+                        type: string
+                factors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Factor'
+                tips:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Tip'
+                savingsVsMarketKop:
+                    type: string
+                signals:
+                    type: array
+                    items:
+                        type: string
+                scheduleType:
+                    enum:
+                        - SCHEDULE_TYPE_UNSPECIFIED
+                        - SCHEDULE_TYPE_ANNUITY
+                        - SCHEDULE_TYPE_DIFFERENTIATED
+                        - SCHEDULE_TYPE_SEASONAL
+                    type: string
+                    format: enum
+        OfferCardsWidget:
+            type: object
+            properties:
+                offers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Offer'
+        OfferComparisonWidget:
+            type: object
+            properties:
+                offers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Offer'
+                rows:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ComparisonRow'
+        Product:
+            type: object
+            properties:
+                productId:
+                    type: string
+                name:
+                    type: string
+                kind:
+                    type: string
+                minAmountKop:
+                    type: string
+                maxAmountKop:
+                    type: string
+                minTermMonths:
+                    type: integer
+                    format: int32
+                maxTermMonths:
+                    type: integer
+                    format: int32
+                baseRateBp:
+                    type: integer
+                    format: int32
+                decisionTime:
+                    type: string
+                description:
+                    type: string
+        QuickRepliesWidget:
+            type: object
+            properties:
+                options:
+                    type: array
+                    items:
+                        type: string
+        RecurringPayment:
+            type: object
+            properties:
+                category:
+                    type: string
+                counterparty:
+                    type: string
+                amountKop:
+                    type: string
+                period:
+                    type: string
+                nextDate:
+                    type: string
+        RequestOtpRequest:
+            type: object
+            properties:
+                phone:
+                    type: string
+        RequestOtpResponse:
+            type: object
+            properties:
+                otpId:
+                    type: string
+                ttlSeconds:
+                    type: integer
+                    format: int32
+                demoCode:
+                    type: string
+        RequestSignOtpRequest:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+        ResetRequest:
+            type: object
+            properties: {}
+        ResetResponse:
+            type: object
+            properties: {}
+        RevokeConsentResponse:
+            type: object
+            properties:
+                source:
+                    $ref: '#/components/schemas/DataSource'
+        SchedulePayment:
+            type: object
+            properties:
+                n:
+                    type: integer
+                    format: int32
+                date:
+                    type: string
+                paymentKop:
+                    type: string
+                principalKop:
+                    type: string
+                interestKop:
+                    type: string
+                balanceKop:
+                    type: string
+        SimulateRequest:
+            type: object
+            properties:
+                productId:
+                    type: string
+                amountKop:
+                    type: string
+                termMonths:
+                    type: integer
+                    format: int32
+                scheduleType:
+                    enum:
+                        - SCHEDULE_TYPE_UNSPECIFIED
+                        - SCHEDULE_TYPE_ANNUITY
+                        - SCHEDULE_TYPE_DIFFERENTIATED
+                        - SCHEDULE_TYPE_SEASONAL
+                    type: string
+                    format: enum
+        SimulateResponse:
+            type: object
+            properties:
+                offer:
+                    $ref: '#/components/schemas/Offer'
+                schedule:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/SchedulePayment'
+                warnings:
+                    type: array
+                    items:
+                        type: string
+        SubmitApplicationRequest:
+            type: object
+            properties:
+                applicationId:
+                    type: string
+        SupplierCheck:
+            type: object
+            properties:
+                found:
+                    type: boolean
+                status:
+                    type: string
+                registeredAt:
+                    type: string
+                flags:
+                    type: array
+                    items:
+                        type: string
+        TimelineStep:
+            type: object
+            properties:
+                code:
+                    type: string
+                title:
+                    type: string
+                state:
+                    enum:
+                        - STEP_STATE_UNSPECIFIED
+                        - STEP_STATE_DONE
+                        - STEP_STATE_CURRENT
+                        - STEP_STATE_PENDING
+                        - STEP_STATE_FAILED
+                    type: string
+                    format: enum
+                at:
+                    type: string
+                    format: date-time
+                note:
+                    type: string
+        Tip:
+            type: object
+            properties:
+                code:
+                    type: string
+                title:
+                    type: string
+                approvalProbAfter:
+                    type: number
+                    format: double
+                rateBpAfter:
+                    type: integer
+                    format: int32
+                maxAmountKopAfter:
+                    type: string
+                actionLink:
+                    type: string
+        ToolTrace:
+            type: object
+            properties:
+                name:
+                    type: string
+                argsJson:
+                    type: string
+                durationMs:
+                    type: integer
+                    format: int32
+                resultSummary:
+                    type: string
+        Trace:
+            type: object
+            properties:
+                model:
+                    type: string
+                tools:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ToolTrace'
+                ttfeMs:
+                    type: integer
+                    format: int32
+                totalMs:
+                    type: integer
+                    format: int32
+                promptTokens:
+                    type: integer
+                    format: int32
+                completionTokens:
+                    type: integer
+                    format: int32
+                dataSources:
+                    type: array
+                    items:
+                        type: string
+                guardrailRegenerated:
+                    type: boolean
+        UnavailableProduct:
+            type: object
+            properties:
+                productId:
+                    type: string
+                productName:
+                    type: string
+                reasons:
+                    type: array
+                    items:
+                        type: string
+        User:
+            type: object
+            properties:
+                userId:
+                    type: string
+                phone:
+                    type: string
+                businessName:
+                    type: string
+                brand:
+                    type: string
+        VerifyOtpRequest:
+            type: object
+            properties:
+                otpId:
+                    type: string
+                code:
+                    type: string
+        VerifyOtpResponse:
+            type: object
+            properties:
+                user:
+                    $ref: '#/components/schemas/User'
+        Widget:
+            type: object
+            properties:
+                widgetId:
+                    type: string
+                offerCards:
+                    $ref: '#/components/schemas/OfferCardsWidget'
+                offerComparison:
+                    $ref: '#/components/schemas/OfferComparisonWidget'
+                loanSimulator:
+                    $ref: '#/components/schemas/LoanSimulatorWidget'
+                cashflowChart:
+                    $ref: '#/components/schemas/Cashflow'
+                applicationDraft:
+                    $ref: '#/components/schemas/ApplicationDraftWidget'
+                consentRequest:
+                    $ref: '#/components/schemas/ConsentRequestWidget'
+                decisionFactors:
+                    $ref: '#/components/schemas/DecisionFactorsWidget'
+                govSupport:
+                    $ref: '#/components/schemas/GovProgramMatch'
+                quickReplies:
+                    $ref: '#/components/schemas/QuickRepliesWidget'
+                metricsCard:
+                    $ref: '#/components/schemas/MetricsCardWidget'
+tags:
+    - name: ApplicationService
+    - name: AuthService
+    - name: CashflowService
+    - name: ChatService
+    - name: ClientService
+    - name: ConsentService
+    - name: DemoService
+      description: Только DEMO_MODE; вне демо-режима возвращает NOT_FOUND.
+    - name: DocumentService
+      description: |-
+        Загрузка (POST /api/v1/documents, multipart) и скачивание (GET /api/v1/documents/{id}/content)
+         — ручные HTTP-хендлеры в gateway, в proto их нет.
+    - name: OfferService

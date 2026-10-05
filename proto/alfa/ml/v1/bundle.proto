@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package alfa.ml.v1;
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/ml/v1;mlv1";
+
+// ClientDataBundle — КОНТРАКТ данных для моделей.
+// Go собирает его из Postgres (adapters/bankdata), Python строит из него признаки (mlcore).
+// Добавление полей — нормально. Удаление и переименование — только через PR с ревью обеих сторон.
+message ClientDataBundle {
+  string bundle_version = 1;               // "1.0"
+  string as_of = 2;                        // "2026-10-06"
+  Profile profile = 3;
+  repeated MonthAggregate months = 4;      // до 24 мес, по возрастанию
+  repeated DailyPoint daily = 5;           // до 365 дней
+  Counterparties counterparties = 6;
+  repeated Debt debts = 7;
+  ExternalData external = 8;               // только источники, разрешённые маской согласий
+  repeated string sources_present = 9;     // ["bank_tx", "egr", "fssp", "ofd", …]
+}
+
+message Profile {
+  string okved_main = 1;
+  repeated string okved_extra = 2;
+  string legal_form = 3;                   // IP | OOO
+  int32 business_age_months = 4;
+  string region_code = 5;
+  string tax_regime = 6;
+  optional int32 employees = 7;
+  string msp_category = 8;
+  int32 months_with_bank = 9;
+}
+
+message MonthAggregate {
+  string month = 1;                        // "2026-09"
+  int64 inflow_total_kop = 2;              // обороты
+  int64 revenue_kop = 3;                   // выручка всего
+  int64 revenue_acquiring_kop = 4;
+  int64 revenue_sbp_kop = 5;
+  int64 revenue_b2b_kop = 6;
+  int64 revenue_marketplace_kop = 7;
+  int64 revenue_gov_kop = 8;
+  int64 loans_received_kop = 9;
+  int64 outflow_total_kop = 10;
+  int64 suppliers_kop = 11;
+  int64 payroll_kop = 12;
+  int64 rent_kop = 13;
+  int64 taxes_kop = 14;
+  int64 debt_service_kop = 15;             // наш банк + распознанные в выписке
+  int64 mfo_kop = 16;
+  int64 owner_withdrawals_kop = 17;
+  int64 cash_out_kop = 18;
+  int64 balance_end_kop = 19;
+  int64 balance_min_kop = 20;
+  int32 low_balance_days = 21;
+  int32 tx_count = 22;
+}
+
+message DailyPoint {
+  string date = 1;                         // "2026-10-06"
+  int64 inflow_kop = 2;
+  int64 outflow_kop = 3;
+  int64 balance_kop = 4;
+  map<string, int64> inflow_by_category = 5;
+  map<string, int64> outflow_by_category = 6;
+}
+
+message Counterparties {
+  double customer_hhi = 1;
+  double top_customer_share = 2;
+  double supplier_hhi = 3;
+  int32 active_customers_90d = 4;
+  bool has_marketplace_payouts = 5;
+  bool has_gov_customers = 6;
+  bool has_equipment_supplier_prepay = 7;
+}
+
+message Debt {
+  string kind = 1;                         // loan | overdraft | leasing | card | mfo
+  bool is_own_bank = 2;
+  int64 balance_kop = 3;
+  int64 monthly_payment_kop = 4;
+  int32 max_overdue_days = 5;
+  string source = 6;                       // own | bki | detected
+}
+
+message ExternalData {
+  // Tier 2 — без согласия
+  optional Egr egr = 1;
+  optional FnsOpen fns_open = 2;
+  optional bool fns_blocked = 3;
+  optional Fssp fssp = 4;
+  optional Arbitr arbitr = 5;
+  optional bool bankrupt = 6;
+  optional Eis eis = 7;
+  optional string zsk_level = 8;           // low | medium | high
+  // Tier 3 — только по согласию
+  optional Bki bki = 20;
+  optional TaxSecret tax_secret = 21;
+  optional Ofd ofd = 22;
+  optional Marketplace marketplace = 23;
+}
+
+message Egr {
+  bool mass_address = 1;
+  bool unreliable = 2;
+  int32 okved_changes_12m = 3;
+}
+
+message FnsOpen {
+  int64 tax_debt_kop = 1;
+  int64 taxes_paid_year_kop = 2;
+}
+
+message Fssp {
+  int32 count = 1;
+  int64 total_kop = 2;
+}
+
+message Arbitr {
+  int32 as_defendant_12m = 1;
+  int64 claims_kop = 2;
+}
+
+message Eis {
+  int32 contracts_12m = 1;
+  int64 contracts_sum_kop = 2;
+  int64 active_contracts_kop = 3;
+  bool in_rnp = 4;
+}
+
+message Bki {
+  int32 loans_open = 1;
+  int64 total_debt_kop = 2;
+  int64 monthly_payments_kop = 3;
+  int32 max_overdue_days_24m = 4;
+  int32 inquiries_30d = 5;
+  int32 bureau_score = 6;
+}
+
+message TaxSecret {
+  int64 declared_income_year_kop = 1;
+  int64 ens_balance_kop = 2;
+}
+
+message Ofd {
+  int64 revenue_30d_kop = 1;
+  int64 avg_check_kop = 2;
+  int32 points_of_sale = 3;
+  double cash_share = 4;
+}
+
+message Marketplace {
+  int64 revenue_30d_kop = 1;
+  double rating = 2;
+  double buyout_rate = 3;
+  int32 platforms = 4;
+}

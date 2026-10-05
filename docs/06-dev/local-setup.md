@@ -5,7 +5,7 @@
 | Инструмент | Зачем | Кому |
 |---|---|---|
 | Docker + Compose v2 | Запуск всего стека | Всем |
-| Go 1.24+ | Разработка core | Fullstack, Junior |
+| Go 1.26+ | Разработка core | Fullstack, Junior |
 | Node.js 22 LTS | Фронтенд | Fullstack |
 | Python 3.12 + [uv](https://docs.astral.sh/uv/) | ML | ML |
 | protoc + плагины (`make proto-tools`) | Только тем, кто меняет `.proto` | Fullstack (+ ML для `alfa/ml`) |
@@ -99,6 +99,12 @@ Core применяет миграции при старте (goose, встро�
 
 | Переменная | По умолчанию | Описание |
 |---|---|---|
+| `HTTP_ADDR` | `:8080` | REST + SSE |
+| `GRPC_ADDR` | `:9090` | Внутренний gRPC core (gateway ходит в него по loopback) |
+| `LOG_LEVEL` / `LOG_FORMAT` | `info` / `text` | `debug\|info\|warn\|error`; формат `text` или `json` |
+| `SESSION_TTL` | `12h` | Срок жизни JWT-сессии |
+| `COOKIE_SECURE` | `false` | `true` за TLS-терминатором. Safari не принимает `Secure`-cookie на `http://localhost` |
+| `SSE_HEARTBEAT` | `15s` | Период `: ping` в SSE |
 | `DATABASE_URL` | `postgres://alfa:alfa@postgres:5432/alfa` | |
 | `ML_ADDR` | `ml:50051` | |
 | `ML_CLIENT` | `grpc` | `fake` — фейковые скоры без ml-сервиса |
@@ -114,7 +120,7 @@ Core применяет миграции при старте (goose, встро�
 | `DEMO_TODAY` | `2026-10-06` | «Сегодня» демо-мира |
 | `PIPELINE_STEP_DELAY` | `4s` | Задержка шагов пайплайна заявки (для красоты таймлайна) |
 | `AUTO_DECISION_LIMIT_KOP` | `1000000000` | 10 млн ₽ |
-| `JWT_SECRET` | генерируется в DEMO_MODE | |
+| `JWT_SECRET` | генерируется в DEMO_MODE | ≥ 16 символов. Вне DEMO_MODE обязателен. Сгенерированный не переживает рестарт — сессии сбрасываются |
 | `DATA_SOURCE` | `synthetic` | Для datagen: `synthetic` \| имя адаптера |
 
 ## Порты

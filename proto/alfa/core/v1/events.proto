@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "alfa/core/v1/application.proto";
+import "alfa/core/v1/document.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service EventsService {
+  // Поток событий клиента. Без http-аннотации: GET /api/v1/events — ручной SSE-хендлер,
+  // который вызывает этот метод через loopback gRPC-клиента (heartbeat `: ping` каждые 15 с, Last-Event-ID).
+  rpc Stream(StreamRequest) returns (stream ClientEvent);
+}
+
+message StreamRequest {
+  string last_event_id = 1; // из заголовка Last-Event-ID
+}
+
+// ClientEvent — payload SSE /events. SSE `id:` = event_id.
+// Имена SSE-событий: application.status, document.extracted, offers.updated,
+// dashboard.invalidate, notification.
+message ClientEvent {
+  string event_id = 1;
+  oneof event {
+    ApplicationStatusChanged application_status = 2;
+    DocumentExtracted document_extracted = 3;
+    OffersUpdated offers_updated = 4;
+    DashboardInvalidate dashboard_invalidate = 5;
+    Notification notification = 6;
+  }
+}
+
+message ApplicationStatusChanged {
+  string application_id = 1;
+  ApplicationStatus status_from = 2;
+  ApplicationStatus status_to = 3;
+  google.protobuf.Timestamp at = 4;
+  Decision decision = 5; // только при переходе в решение
+}
+
+message DocumentExtracted {
+  string document_id = 1;
+  string application_id = 2;
+  ExtractedInvoice extracted = 3;
+  SupplierCheck supplier_check = 4;
+}
+
+message OffersUpdated {
+  string reason = 1; // consent_granted | consent_revoked | disbursed
+}
+
+message DashboardInvalidate {
+  string reason = 1; // disbursed
+}
+
+message Notification {
+  string title = 1;
+  string body = 2;
+  string link = 3; // deeplink во фронт
+}

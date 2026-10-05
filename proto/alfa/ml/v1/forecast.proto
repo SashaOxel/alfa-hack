@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package alfa.ml.v1;
+
+import "alfa/ml/v1/bundle.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/ml/v1;mlv1";
+
+service ForecastService {
+  rpc Forecast(ForecastRequest) returns (ForecastResponse);
+}
+
+message ForecastRequest {
+  string as_of = 1;
+  repeated DailyPoint history = 2;         // 180–365 дней
+  int32 horizon_days = 3;
+  string okved_main = 4;
+}
+
+message ForecastResponse {
+  repeated ForecastPoint points = 1;
+  repeated RecurringPayment recurring = 2;
+  string model_version = 3;
+  double backtest_wape = 4;
+}
+
+message ForecastPoint {
+  string date = 1;
+  int64 inflow_p50_kop = 2;
+  int64 outflow_p50_kop = 3;
+  int64 balance_p10_kop = 4;
+  int64 balance_p50_kop = 5;
+  int64 balance_p90_kop = 6;
+}
+
+message RecurringPayment {
+  string category = 1;                     // taxes | rent | payroll | supplier_bulk | debt_service
+  string counterparty = 2;
+  int64 amount_kop = 3;
+  string period = 4;                       // biweekly | monthly | quarterly
+  string next_date = 5;
+}

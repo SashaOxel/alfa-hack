@@ -110,7 +110,7 @@ flowchart LR
 | | openapi-typescript + openapi-fetch | Типы API генерируются из proto → OpenAPI |
 | | @microsoft/fetch-event-source | SSE с POST-телом и заголовками |
 | | markdown-it + DOMPurify | Markdown в сообщениях ассистента без XSS |
-| **Backend** | Go 1.24+, grpc-go, grpc-gateway v2 | Требование стека |
+| **Backend** | Go 1.26+, grpc-go, grpc-gateway v2 | Требование стека |
 | | protoc + protoc-gen-go / go-grpc / grpc-gateway / openapi (gnostic) | Генерация Go, REST-шлюза и OpenAPI v3 одной командой `make proto`. Работает офлайн, без buf.build ([ADR-0001](adr/0001-monorepo-contract-first.md)) |
 | | pgx v5 + sqlc, goose | Типобезопасный SQL без ORM, понятный новичку |
 | | River | Фоновые задачи (пайплайн заявки) поверх Postgres |

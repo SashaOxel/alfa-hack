@@ -1,0 +1,17 @@
+# секреты и окружение
+.env
+!.env.example
+
+# артефакты ML и данные (ADR: монтируются, не коммитятся)
+ml/artifacts/
+ml/data/
+
+# Go / Node / Python
+backend/bin/
+node_modules/
+__pycache__/
+.venv/
+*.pyc
+
+# редакторы
+.DS_Store

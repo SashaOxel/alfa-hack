@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service ConsentService {
+  rpc ListDataSources(ListDataSourcesRequest) returns (ListDataSourcesResponse) {
+    option (google.api.http) = {get: "/api/v1/consents"};
+  }
+  // Идемпотентность: заголовок Idempotency-Key.
+  rpc GrantConsent(GrantConsentRequest) returns (GrantConsentResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/consents/{source}"
+      body: "*"
+    };
+  }
+  rpc RevokeConsent(RevokeConsentRequest) returns (RevokeConsentResponse) {
+    option (google.api.http) = {delete: "/api/v1/consents/{source}"};
+  }
+}
+
+enum ConsentStatus {
+  CONSENT_STATUS_UNSPECIFIED = 0;
+  CONSENT_STATUS_NOT_GRANTED = 1;
+  CONSENT_STATUS_GRANTED = 2;
+  CONSENT_STATUS_REVOKED = 3;
+}
+
+message ListDataSourcesRequest {}
+
+message ListDataSourcesResponse {
+  repeated DataSource sources = 1;
+}
+
+message DataSource {
+  string source = 1; // egr | fssp | … | bki | fns_tax_secret | ofd | marketplace | openapi_bank
+  string title = 2;
+  string description = 3;
+  int32 tier = 4; // 2 — всегда используется, 3 — только по согласию
+  bool requires_consent = 5;
+  ConsentStatus status = 6;
+  repeated string what_we_use = 7; // что именно берём из источника
+  ConsentEffect expected_effect = 8; // что даст подключение (для источников без согласия — пусто)
+  google.protobuf.Timestamp granted_at = 9;
+  google.protobuf.Timestamp expires_at = 10;
+}
+
+message ConsentEffect {
+  int64 max_amount_delta_kop = 1;
+  int32 rate_delta_bp = 2;
+  double approval_prob_delta = 3;
+}
+
+message GrantConsentRequest {
+  string source = 1; // path
+  repeated string scope = 2; // валидация: подмножество what_we_use
+}
+
+message GrantConsentResponse {
+  DataSource source = 1;
+  LimitSnapshot before = 2;
+  LimitSnapshot after = 3;
+}
+
+message LimitSnapshot {
+  int64 max_amount_kop = 1;
+  int32 rate_bp = 2;
+  double approval_prob = 3;
+}
+
+message RevokeConsentRequest {
+  string source = 1; // path
+}
+
+message RevokeConsentResponse {
+  DataSource source = 1;
+}

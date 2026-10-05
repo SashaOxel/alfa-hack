@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+// Загрузка (POST /api/v1/documents, multipart) и скачивание (GET /api/v1/documents/{id}/content)
+// — ручные HTTP-хендлеры в gateway, в proto их нет.
+service DocumentService {
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse) {
+    option (google.api.http) = {get: "/api/v1/documents"};
+  }
+  rpc GetDocument(GetDocumentRequest) returns (Document) {
+    option (google.api.http) = {get: "/api/v1/documents/{document_id}"};
+  }
+}
+
+enum DocumentKind {
+  DOCUMENT_KIND_UNSPECIFIED = 0;
+  DOCUMENT_KIND_INVOICE = 1;
+  DOCUMENT_KIND_SPEC = 2;
+  DOCUMENT_KIND_CONTRACT = 3;
+  DOCUMENT_KIND_OTHER = 4;
+}
+
+enum ExtractStatus {
+  EXTRACT_STATUS_UNSPECIFIED = 0;
+  EXTRACT_STATUS_PENDING = 1;
+  EXTRACT_STATUS_DONE = 2;
+  EXTRACT_STATUS_FAILED = 3;
+  EXTRACT_STATUS_NOT_APPLICABLE = 4;
+}
+
+message ListDocumentsRequest {
+  string application_id = 1; // фильтр, необязательно
+}
+
+message ListDocumentsResponse {
+  repeated Document documents = 1;
+}
+
+message GetDocumentRequest {
+  string document_id = 1;
+}
+
+message Document {
+  string document_id = 1;
+  DocumentKind kind = 2;
+  string filename = 3;
+  string mime = 4;
+  int64 size_bytes = 5;
+  string application_id = 6;
+  ExtractStatus extract_status = 7;
+  ExtractedInvoice extracted = 8; // не задано, пока извлечение не завершено
+  SupplierCheck supplier_check = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message ExtractedInvoice {
+  string supplier_name = 1;
+  string supplier_inn = 2;
+  string invoice_number = 3;
+  string invoice_date = 4; // "2026-10-01"
+  int64 amount_kop = 5;
+  string items_summary = 6; // «Кофемашина двухгрупповая, 1 шт.»
+}
+
+message SupplierCheck {
+  bool found = 1; // есть в реестре контрагентов
+  string status = 2; // active | liquidating | not_found
+  string registered_at = 3;
+  repeated string flags = 4; // «массовый адрес», «недостоверные сведения»
+}

@@ -1,0 +1,233 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "alfa/core/v1/cashflow.proto";
+import "alfa/core/v1/offer.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service ChatService {
+  rpc CreateSession(CreateSessionRequest) returns (ChatSession) {
+    option (google.api.http) = {
+      post: "/api/v1/chat/sessions"
+      body: "*"
+    };
+  }
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {
+    option (google.api.http) = {get: "/api/v1/chat/sessions"};
+  }
+  // История с виджетами.
+  rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse) {
+    option (google.api.http) = {get: "/api/v1/chat/sessions/{session_id}/messages"};
+  }
+  // Ответ ассистента потоком. Без http-аннотации: grpc-gateway стримит JSON, а фронту нужен SSE.
+  // POST /api/v1/chat/sessions/{session_id}/messages — ручной хендлер в gateway: читает тело
+  // ({text} или {action}), вызывает этот метод через loopback gRPC-клиента (с теми же interceptors) и пишет каждый AssistantEvent как
+  // `event: <имя варианта oneof>` + `data: <protojson>`.
+  rpc SendMessage(SendMessageRequest) returns (stream AssistantEvent);
+}
+
+message CreateSessionRequest {}
+
+message ChatSession {
+  string session_id = 1;
+  string title = 2;
+  Needs needs = 3; // что ассистент уже понял (slots)
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message ListSessionsRequest {}
+
+message ListSessionsResponse {
+  repeated ChatSession sessions = 1;
+}
+
+message GetMessagesRequest {
+  string session_id = 1;
+}
+
+message GetMessagesResponse {
+  repeated ChatMessage messages = 1;
+}
+
+enum ChatRole {
+  CHAT_ROLE_UNSPECIFIED = 0;
+  CHAT_ROLE_USER = 1;
+  CHAT_ROLE_ASSISTANT = 2;
+}
+
+message ChatMessage {
+  string message_id = 1;
+  ChatRole role = 2;
+  string text = 3;
+  repeated Widget widgets = 4;
+  google.protobuf.Timestamp created_at = 5;
+  Trace trace = 6; // для режима прозрачности; только у сообщений ассистента
+}
+
+message SendMessageRequest {
+  string session_id = 1; // path
+  string text = 2; // свободный текст…
+  MessageAction action = 3; // …или действие из виджета; задаётся одно из двух
+}
+
+message MessageAction {
+  string type = 1; // quick_reply | select_offer | grant_consent | …
+  google.protobuf.Struct payload = 2;
+}
+
+// AssistantEvent — payload SSE. Имя SSE-события = имя варианта oneof (message_start, text_delta, …).
+message AssistantEvent {
+  oneof event {
+    MessageStart message_start = 1;
+    TextDelta text_delta = 2;
+    ToolStatus tool_status = 3;
+    Widget widget = 4;
+    ContextUpdate context_update = 5;
+    MessageEnd message_end = 6;
+    AssistantError error = 7;
+  }
+}
+
+message MessageStart {
+  string message_id = 1;
+}
+
+message TextDelta {
+  string text = 1;
+}
+
+message ToolStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTED = 1;
+    STATE_DONE = 2;
+    STATE_FAILED = 3;
+  }
+
+  string call_id = 1;
+  string tool = 2;
+  string label = 3; // «Смотрю обороты за 12 месяцев…»
+  State state = 4;
+  int32 duration_ms = 5;
+}
+
+message ContextUpdate {
+  Needs needs = 1;
+}
+
+message Needs {
+  Purpose goal = 1;
+  string goal_text = 2;
+  optional int64 amount_kop = 3;
+  optional int32 term_months = 4;
+  optional bool has_collateral = 5;
+  string urgency = 6;
+  optional int64 max_payment_kop = 7;
+}
+
+message Widget {
+  string widget_id = 1;
+  oneof kind {
+    OfferCardsWidget offer_cards = 2;
+    OfferComparisonWidget offer_comparison = 3;
+    LoanSimulatorWidget loan_simulator = 4;
+    Cashflow cashflow_chart = 5;
+    ApplicationDraftWidget application_draft = 6;
+    ConsentRequestWidget consent_request = 7;
+    DecisionFactorsWidget decision_factors = 8;
+    GovProgramMatch gov_support = 9;
+    QuickRepliesWidget quick_replies = 10;
+    MetricsCardWidget metrics_card = 11;
+  }
+}
+
+message OfferCardsWidget {
+  repeated Offer offers = 1;
+}
+
+message OfferComparisonWidget {
+  repeated Offer offers = 1;
+  repeated ComparisonRow rows = 2;
+}
+
+message ComparisonRow {
+  string title = 1;
+  repeated string values = 2;
+  int32 best_index = 3;
+}
+
+// Фронт сам двигает слайдеры и зовёт POST /offers/simulate; границы — из product.
+message LoanSimulatorWidget {
+  SimulateResponse simulation = 1;
+  Product product = 2;
+}
+
+message ApplicationDraftWidget {
+  string application_id = 1;
+  double autofill_ratio = 2;
+  string summary = 3;
+}
+
+message ConsentRequestWidget {
+  string source = 1;
+  string title = 2;
+  string benefit = 3;
+}
+
+message DecisionFactorsWidget {
+  repeated Factor factors = 1;
+  repeated Tip tips = 2;
+}
+
+message QuickRepliesWidget {
+  repeated string options = 1;
+}
+
+message MetricsCardWidget {
+  string title = 1;
+  repeated MetricItem items = 2;
+}
+
+message MetricItem {
+  string label = 1;
+  oneof value {
+    int64 amount_kop = 2;
+    double ratio = 3;
+    string text = 4;
+  }
+  optional double delta_ratio = 5; // изменение к прошлому периоду
+}
+
+message MessageEnd {
+  string message_id = 1;
+  Trace trace = 2;
+}
+
+message Trace {
+  string model = 1;
+  repeated ToolTrace tools = 2;
+  int32 ttfe_ms = 3; // time to first event
+  int32 total_ms = 4;
+  int32 prompt_tokens = 5;
+  int32 completion_tokens = 6;
+  repeated string data_sources = 7;
+  bool guardrail_regenerated = 8;
+}
+
+message ToolTrace {
+  string name = 1;
+  string args_json = 2;
+  int32 duration_ms = 3;
+  string result_summary = 4;
+}
+
+message AssistantError {
+  string code = 1;
+  string message = 2;
+}

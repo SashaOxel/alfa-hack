@@ -2,6 +2,14 @@
 
 > Стартовая точка для `/proto`. После того как файлы появятся в `/proto`, **источник правды — они**, этот документ не обновляется.
 
+> **Статус: `/proto` создан (F1, 07.10.2026), этот документ заморожен.** Что изменилось относительно черновика:
+>
+> - Добавлены `core/v1/demo.proto` (`POST /demo/reset`) и `ml/v1/meta.proto` (`Meta.GetModelInfo`, есть в [services.md](../03-architecture/services.md)); недостающие `client`, `cashflow`, `consent`, `document`, `events` дописаны по [api.md](api.md).
+> - `SendMessage` (чат) и `Stream` (события) — **server-streaming RPC без http-аннотации**: SSE-хендлеры в gateway вызывают их in-process и пишут каждое событие как `event: <имя oneof>` + `data: <protojson>`.
+> - Enum вместо строк: `DecisionOutcome`, `StepState`, `ApplicationOrigin`, `ConsentStatus`, `DocumentKind`, `ExtractStatus`, `ChatRole`. Моменты времени — `google.protobuf.Timestamp`, календарные даты — строки `"2026-10-06"`.
+> - `Widget.loan_simulator` — `LoanSimulatorWidget` (симуляция + `Product` для границ слайдеров), добавлен `metrics_card`.
+> - Из `third_party` вендорены только `google/api/{annotations,http}.proto`; `status.proto` добавим, когда понадобится.
+
 ## Раскладка
 
 ```
