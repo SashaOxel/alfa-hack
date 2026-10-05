@@ -26,7 +26,7 @@ service ChatService {
   }
   // Ответ ассистента потоком. Без http-аннотации: grpc-gateway стримит JSON, а фронту нужен SSE.
   // POST /api/v1/chat/sessions/{session_id}/messages — ручной хендлер в gateway: читает тело
-  // ({text} или {action}), вызывает этот метод in-process и пишет каждый AssistantEvent как
+  // ({text} или {action}), вызывает этот метод через loopback gRPC-клиента (с теми же interceptors) и пишет каждый AssistantEvent как
   // `event: <имя варианта oneof>` + `data: <protojson>`.
   rpc SendMessage(SendMessageRequest) returns (stream AssistantEvent);
 }

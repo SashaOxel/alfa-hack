@@ -27,7 +27,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EventsServiceClient interface {
 	// Поток событий клиента. Без http-аннотации: GET /api/v1/events — ручной SSE-хендлер,
-	// который вызывает этот метод in-process (heartbeat `: ping` каждые 15 с, Last-Event-ID).
+	// который вызывает этот метод через loopback gRPC-клиента (heartbeat `: ping` каждые 15 с, Last-Event-ID).
 	Stream(ctx context.Context, in *StreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ClientEvent], error)
 }
 
@@ -63,7 +63,7 @@ type EventsService_StreamClient = grpc.ServerStreamingClient[ClientEvent]
 // for forward compatibility.
 type EventsServiceServer interface {
 	// Поток событий клиента. Без http-аннотации: GET /api/v1/events — ручной SSE-хендлер,
-	// который вызывает этот метод in-process (heartbeat `: ping` каждые 15 с, Last-Event-ID).
+	// который вызывает этот метод через loopback gRPC-клиента (heartbeat `: ping` каждые 15 с, Last-Event-ID).
 	Stream(*StreamRequest, grpc.ServerStreamingServer[ClientEvent]) error
 	mustEmbedUnimplementedEventsServiceServer()
 }

@@ -35,7 +35,7 @@ type ChatServiceClient interface {
 	GetMessages(ctx context.Context, in *GetMessagesRequest, opts ...grpc.CallOption) (*GetMessagesResponse, error)
 	// Ответ ассистента потоком. Без http-аннотации: grpc-gateway стримит JSON, а фронту нужен SSE.
 	// POST /api/v1/chat/sessions/{session_id}/messages — ручной хендлер в gateway: читает тело
-	// ({text} или {action}), вызывает этот метод in-process и пишет каждый AssistantEvent как
+	// ({text} или {action}), вызывает этот метод через loopback gRPC-клиента (с теми же interceptors) и пишет каждый AssistantEvent как
 	// `event: <имя варианта oneof>` + `data: <protojson>`.
 	SendMessage(ctx context.Context, in *SendMessageRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[AssistantEvent], error)
 }
@@ -107,7 +107,7 @@ type ChatServiceServer interface {
 	GetMessages(context.Context, *GetMessagesRequest) (*GetMessagesResponse, error)
 	// Ответ ассистента потоком. Без http-аннотации: grpc-gateway стримит JSON, а фронту нужен SSE.
 	// POST /api/v1/chat/sessions/{session_id}/messages — ручной хендлер в gateway: читает тело
-	// ({text} или {action}), вызывает этот метод in-process и пишет каждый AssistantEvent как
+	// ({text} или {action}), вызывает этот метод через loopback gRPC-клиента (с теми же interceptors) и пишет каждый AssistantEvent как
 	// `event: <имя варианта oneof>` + `data: <protojson>`.
 	SendMessage(*SendMessageRequest, grpc.ServerStreamingServer[AssistantEvent]) error
 	mustEmbedUnimplementedChatServiceServer()

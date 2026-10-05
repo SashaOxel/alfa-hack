@@ -10,7 +10,7 @@ option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;cor
 
 service EventsService {
   // Поток событий клиента. Без http-аннотации: GET /api/v1/events — ручной SSE-хендлер,
-  // который вызывает этот метод in-process (heartbeat `: ping` каждые 15 с, Last-Event-ID).
+  // который вызывает этот метод через loopback gRPC-клиента (heartbeat `: ping` каждые 15 с, Last-Event-ID).
   rpc Stream(StreamRequest) returns (stream ClientEvent);
 }
 
