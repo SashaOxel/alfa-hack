@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "alfa/core/v1/application.proto";
+import "alfa/core/v1/cashflow.proto";
+import "alfa/core/v1/offer.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service ClientService {
+  rpc GetProfile(GetProfileRequest) returns (BusinessProfile) {
+    option (google.api.http) = {get: "/api/v1/profile"};
+  }
+  // Всё для главной одним запросом.
+  rpc GetDashboard(GetDashboardRequest) returns (Dashboard) {
+    option (google.api.http) = {get: "/api/v1/dashboard"};
+  }
+}
+
+message GetProfileRequest {}
+
+message BusinessProfile {
+  string name = 1; // «ИП Смирнов А. И.»
+  string brand = 2; // «Кофейня «Зерно»»
+  string inn = 3;
+  string legal_form = 4; // IP | OOO
+  string okved_main = 5;
+  string region_code = 6;
+  string tax_regime = 7;
+  string msp_category = 8;
+  int32 business_age_months = 9;
+  optional int32 employees = 10;
+  string registration_date = 11; // "2023-03-14"
+}
+
+message GetDashboardRequest {}
+
+message Dashboard {
+  BusinessProfile profile = 1;
+  Metrics metrics = 2;
+  Health health = 3;
+  Banner banner = 4; // проактивный баннер; не задан, если предложить нечего
+  CashGap cash_gap = 5; // алерт разрыва; не задан, если разрыва нет
+  repeated Offer top_offers = 6;
+  repeated ApplicationSummary applications = 7;
+  DataBoost data_boost = 8; // «Подключите данные кассы»; не задан, если все источники подключены
+}
+
+message Metrics {
+  int64 revenue_30d_kop = 1;
+  double revenue_growth_qoq = 2; // 0.18 → +18% за квартал
+  repeated MonthAmount revenue_series = 3;
+  int64 balance_kop = 4;
+  double credit_load = 5; // доля обслуживания долга в выручке
+}
+
+message MonthAmount {
+  string month = 1; // "2026-04"
+  int64 amount_kop = 2;
+}
+
+message Health {
+  int32 score = 1; // 0..1000
+  string label = 2; // «Отличное»
+  repeated string tips = 3;
+}
+
+message Banner {
+  string title = 1; // «Вам доступно до 3 500 000 ₽»
+  string text = 2;
+  int64 max_amount_kop = 3;
+}
+
+message DataBoost {
+  string source = 1; // ofd | marketplace | …
+  string title = 2;
+  int64 max_amount_delta_kop = 3;
+  int32 rate_delta_bp = 4;
+}

@@ -4,7 +4,7 @@
 
 ## День 0: окружение (≈ 2 часа)
 
-- [ ] Установить Docker, Go 1.24+, VS Code или GoLand (с Go-плагином)
+- [ ] Установить Docker, Go 1.26+, VS Code или GoLand (с Go-плагином)
 - [ ] Склонировать репозиторий, выполнить [быстрый старт](local-setup.md#быстрый-старт)
 - [ ] Открыть http://localhost:3000 и войти как кофейня
 - [ ] Прочитать: [vision](../00-overview/vision.md) (10 мин), [overview](../03-architecture/overview.md) (20 мин), [services → core](../03-architecture/services.md#core-go) (15 мин), [conventions](conventions.md) (10 мин)

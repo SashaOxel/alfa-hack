@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package alfa.ml.v1;
+
+import "alfa/ml/v1/bundle.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/ml/v1;mlv1";
+
+service ScoringService {
+  rpc Score(ScoreRequest) returns (ScoreResponse);
+}
+
+message ScoreRequest {
+  ClientDataBundle bundle = 1;
+  repeated Scenario scenarios = 2;         // минимум один; без product_kind = клиентский скор
+}
+
+message Scenario {
+  string id = 1;
+  optional string product_kind = 2;        // loan | overdraft | leasing | …
+  optional int64 amount_kop = 3;
+  optional int32 term_months = 4;
+  optional int64 monthly_payment_kop = 5;  // считает Go
+  optional int64 limit_kop = 6;            // лимит, рассчитанный Go
+  Assumptions assume = 7;                  // what-if
+}
+
+message Assumptions {
+  repeated string assume_sources = 1;      // «как если бы подключили ofd»: априорные значения, без реальных данных
+  bool tax_debt_repaid = 2;
+  bool fssp_repaid = 3;
+  bool mfo_closed = 4;
+  optional double revenue_multiplier = 5;
+}
+
+message ScoreResponse {
+  repeated ScoreResult results = 1;
+  string model_version = 2;
+}
+
+message ScoreResult {
+  string scenario_id = 1;
+  double pd = 2;
+  string grade = 3;                        // A..E
+  int32 health_score = 4;                  // 0..1000
+  double approval_prob = 5;
+  repeated Contribution contributions = 6; // топ-10 по |shap|
+}
+
+message Contribution {
+  string feature = 1;                      // код признака; тексты — в config/feature_texts.yaml (читает Go)
+  double value = 2;
+  double shap = 3;
+}

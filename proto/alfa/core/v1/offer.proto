@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service OfferService {
+  rpc ListOffers(ListOffersRequest) returns (ListOffersResponse) {
+    option (google.api.http) = {get: "/api/v1/offers"};
+  }
+  rpc Simulate(SimulateRequest) returns (SimulateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/offers/simulate"
+      body: "*"
+    };
+  }
+  rpc GetCatalog(GetCatalogRequest) returns (GetCatalogResponse) {
+    option (google.api.http) = {get: "/api/v1/offers/catalog"};
+  }
+  rpc GetGovSupport(GetGovSupportRequest) returns (GetGovSupportResponse) {
+    option (google.api.http) = {get: "/api/v1/offers/gov-support"};
+  }
+}
+
+enum Purpose {
+  PURPOSE_UNSPECIFIED = 0;
+  PURPOSE_EQUIPMENT = 1;
+  PURPOSE_VEHICLE = 2;
+  PURPOSE_WORKING_CAPITAL = 3;
+  PURPOSE_INVENTORY_SEASON = 4;
+  PURPOSE_CASH_GAP = 5;
+  PURPOSE_TENDER = 6;
+  PURPOSE_REFINANCE = 7;
+}
+
+enum ScheduleType {
+  SCHEDULE_TYPE_UNSPECIFIED = 0;
+  SCHEDULE_TYPE_ANNUITY = 1;
+  SCHEDULE_TYPE_DIFFERENTIATED = 2;
+  SCHEDULE_TYPE_SEASONAL = 3;
+}
+
+enum Badge {
+  BADGE_UNSPECIFIED = 0;
+  BADGE_BEST = 1; // «Лучший вариант»
+  BADGE_ALTERNATIVE = 2;
+  BADGE_GOV_SUPPORT = 3; // «Господдержка»
+  BADGE_PREAPPROVED = 4;
+}
+
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_POSITIVE = 1;
+  DIRECTION_NEGATIVE = 2;
+}
+
+message ListOffersRequest {
+  Purpose purpose = 1; // не задана — проактивные офферы без цели
+  optional int64 amount_kop = 2;
+  optional int32 term_months = 3;
+  int32 limit = 4; // по умолчанию 3
+}
+
+message ListOffersResponse {
+  repeated Offer offers = 1;
+  repeated UnavailableProduct unavailable = 2; // что не подошло и почему
+}
+
+message Offer {
+  string offer_id = 1;
+  string product_id = 2;
+  string product_name = 3;
+  Badge badge = 4;
+  int64 max_amount_kop = 5;
+  int64 amount_kop = 6;
+  int32 term_months = 7;
+  int32 rate_bp = 8;
+  int64 monthly_payment_kop = 9;
+  int64 overpayment_kop = 10;
+  double payment_to_revenue = 11;
+  double approval_prob = 12;
+  string decision_time = 13; // «за 1 час»
+  repeated string fit_reasons = 14; // «Целевое использование под оборудование»
+  repeated Factor factors = 15; // SHAP → человеческие формулировки
+  repeated Tip tips = 16; // «как повысить шанс»
+  optional int64 savings_vs_market_kop = 17;
+  repeated string signals = 18; // коды сработавших сигналов (для режима прозрачности)
+  ScheduleType schedule_type = 19;
+}
+
+message Factor {
+  string code = 1;
+  string title = 2;
+  double impact = 3; // нормированный вклад 0..1
+  Direction direction = 4;
+}
+
+message Tip {
+  string code = 1; // reduce_amount | extend_term | connect_ofd | repay_tax_debt | add_umbrella_guarantee …
+  string title = 2;
+  double approval_prob_after = 3;
+  optional int32 rate_bp_after = 4;
+  optional int64 max_amount_kop_after = 5;
+  string action_link = 6; // deeplink во фронт: /finance/consents?source=ofd
+}
+
+message UnavailableProduct {
+  string product_id = 1;
+  string product_name = 2;
+  repeated string reasons = 3;
+}
+
+message SimulateRequest {
+  string product_id = 1; // валидация: есть в каталоге
+  int64 amount_kop = 2; // валидация: в границах продукта
+  int32 term_months = 3; // валидация: в границах продукта
+  ScheduleType schedule_type = 4;
+}
+
+message SimulateResponse {
+  Offer offer = 1;
+  repeated SchedulePayment schedule = 2;
+  repeated string warnings = 3; // «Платёж превышает 30% свободного потока»
+}
+
+message SchedulePayment {
+  int32 n = 1;
+  string date = 2; // "2026-11-06"
+  int64 payment_kop = 3;
+  int64 principal_kop = 4;
+  int64 interest_kop = 5;
+  int64 balance_kop = 6;
+}
+
+message GetCatalogRequest {}
+
+message GetCatalogResponse {
+  repeated Product products = 1;
+}
+
+message Product {
+  string product_id = 1;
+  string name = 2;
+  string kind = 3;
+  int64 min_amount_kop = 4;
+  int64 max_amount_kop = 5;
+  int32 min_term_months = 6;
+  int32 max_term_months = 7;
+  int32 base_rate_bp = 8;
+  string decision_time = 9;
+  string description = 10;
+}
+
+message GetGovSupportRequest {}
+
+message GetGovSupportResponse {
+  repeated GovProgramMatch matches = 1;
+}
+
+message GovProgramMatch {
+  string program_id = 1;
+  string name = 2;
+  bool eligible = 3;
+  repeated string reasons = 4;
+  int32 rate_bp = 5;
+  int64 savings_vs_market_kop = 6;
+}

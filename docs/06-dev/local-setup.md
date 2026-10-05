@@ -5,7 +5,7 @@
 | Инструмент | Зачем | Кому |
 |---|---|---|
 | Docker + Compose v2 | Запуск всего стека | Всем |
-| Go 1.24+ | Разработка core | Fullstack, Junior |
+| Go 1.26+ | Разработка core | Fullstack, Junior |
 | Node.js 22 LTS | Фронтенд | Fullstack |
 | Python 3.12 + [uv](https://docs.astral.sh/uv/) | ML | ML |
 | protoc + плагины (`make proto-tools`) | Только тем, кто меняет `.proto` | Fullstack (+ ML для `alfa/ml`) |

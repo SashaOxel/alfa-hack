@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package alfa.ml.v1;
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/ml/v1;mlv1";
+
+// Метаданные моделей: readyz, режим прозрачности и слайды питча.
+service MetaService {
+  rpc GetModelInfo(GetModelInfoRequest) returns (GetModelInfoResponse);
+}
+
+message GetModelInfoRequest {}
+
+message GetModelInfoResponse {
+  string bundle_version = 1;               // версия контракта ClientDataBundle, с которой работает сервис
+  repeated ModelInfo models = 2;
+}
+
+message ModelInfo {
+  string name = 1;                         // pd | approval | forecast | categorizer
+  string version = 2;
+  string trained_at = 3;                   // RFC 3339
+  map<string, double> metrics = 4;         // roc_auc, ks, wape, …
+}

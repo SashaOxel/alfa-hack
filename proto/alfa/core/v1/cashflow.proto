@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service CashflowService {
+  rpc GetCashflow(GetCashflowRequest) returns (Cashflow) {
+    option (google.api.http) = {get: "/api/v1/finance/cashflow"};
+  }
+}
+
+message GetCashflowRequest {
+  int32 horizon_days = 1; // по умолчанию 60
+}
+
+// Cashflow — факт за 90 дней, прогноз, найденные разрывы и регулярные платежи.
+// Виджет ассистента `cashflow_chart` использует это же сообщение.
+message Cashflow {
+  string as_of = 1; // "2026-10-06"
+  repeated HistoryPoint history = 2;
+  repeated ForecastPoint forecast = 3;
+  repeated CashGap gaps = 4;
+  repeated RecurringPayment recurring = 5;
+  string model_version = 6;
+  double backtest_wape = 7;
+}
+
+message HistoryPoint {
+  string date = 1;
+  int64 inflow_kop = 2;
+  int64 outflow_kop = 3;
+  int64 balance_kop = 4;
+}
+
+message ForecastPoint {
+  string date = 1;
+  int64 inflow_p50_kop = 2;
+  int64 outflow_p50_kop = 3;
+  int64 balance_p10_kop = 4;
+  int64 balance_p50_kop = 5;
+  int64 balance_p90_kop = 6;
+}
+
+message CashGap {
+  string date = 1; // первая дата, когда p10-остаток уходит ниже нуля
+  int32 days_ahead = 2;
+  int64 amount_kop = 3; // глубина разрыва
+  repeated string causes = 4; // «Квартальная закупка зерна 450 000 ₽»
+  string suggested_product_id = 5; // overdraft
+  int64 suggested_amount_kop = 6;
+}
+
+message RecurringPayment {
+  string category = 1; // taxes | rent | payroll | supplier_bulk | debt_service
+  string counterparty = 2;
+  int64 amount_kop = 3;
+  string period = 4; // biweekly | monthly | quarterly
+  string next_date = 5;
+}

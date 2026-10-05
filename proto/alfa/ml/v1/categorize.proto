@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package alfa.ml.v1;
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/ml/v1;mlv1";
+
+service CategorizeService {
+  rpc Categorize(CategorizeRequest) returns (CategorizeResponse);
+}
+
+message CategorizeRequest {
+  repeated TxInput items = 1;
+}
+
+message TxInput {
+  string id = 1;
+  string direction = 2;                    // in | out
+  int64 amount_kop = 3;
+  string counterparty_name = 4;
+  string counterparty_inn = 5;
+  string purpose = 6;
+  string channel = 7;                      // acquiring | sbp | transfer | cash | card
+}
+
+message CategorizeResponse {
+  repeated TxCategory items = 1;
+  string model_version = 2;
+}
+
+message TxCategory {
+  string id = 1;
+  string category = 2;
+  double confidence = 3;
+}

@@ -1,0 +1,243 @@
+syntax = "proto3";
+
+package alfa.core.v1;
+
+import "alfa/core/v1/auth.proto";
+import "alfa/core/v1/offer.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/sashaoxel/alfa-hack/backend/gen/alfa/core/v1;corev1";
+
+service ApplicationService {
+  // Черновик с автозаполнением из данных банка.
+  rpc CreateApplication(CreateApplicationRequest) returns (Application) {
+    option (google.api.http) = {
+      post: "/api/v1/applications"
+      body: "*"
+    };
+  }
+  rpc ListApplications(ListApplicationsRequest) returns (ListApplicationsResponse) {
+    option (google.api.http) = {get: "/api/v1/applications"};
+  }
+  rpc GetApplication(GetApplicationRequest) returns (Application) {
+    option (google.api.http) = {get: "/api/v1/applications/{application_id}"};
+  }
+  // Меняет поля формы; какие именно — в update_mask (?updateMask=form.inn,form.employees).
+  rpc UpdateApplication(UpdateApplicationRequest) returns (Application) {
+    option (google.api.http) = {
+      patch: "/api/v1/applications/{application_id}"
+      body: "form"
+    };
+  }
+  // Идемпотентность: Idempotency-Key. Запускает пайплайн, дальше статусы приходят по SSE /events.
+  rpc SubmitApplication(SubmitApplicationRequest) returns (Application) {
+    option (google.api.http) = {
+      post: "/api/v1/applications/{application_id}/submit"
+      body: "*"
+    };
+  }
+  rpc AcceptCounterOffer(AcceptCounterOfferRequest) returns (Application) {
+    option (google.api.http) = {
+      post: "/api/v1/applications/{application_id}/accept-counter-offer"
+      body: "*"
+    };
+  }
+  rpc CancelApplication(CancelApplicationRequest) returns (Application) {
+    option (google.api.http) = {
+      post: "/api/v1/applications/{application_id}/cancel"
+      body: "*"
+    };
+  }
+  rpc RequestSignOtp(RequestSignOtpRequest) returns (RequestOtpResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/applications/{application_id}/sign/otp"
+      body: "*"
+    };
+  }
+  // Идемпотентность: Idempotency-Key.
+  rpc ConfirmSign(ConfirmSignRequest) returns (Application) {
+    option (google.api.http) = {
+      post: "/api/v1/applications/{application_id}/sign/confirm"
+      body: "*"
+    };
+  }
+  rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse) {
+    option (google.api.http) = {get: "/api/v1/applications/{application_id}/schedule"};
+  }
+}
+
+enum ApplicationStatus {
+  APPLICATION_STATUS_UNSPECIFIED = 0;
+  APPLICATION_STATUS_DRAFT = 1;
+  APPLICATION_STATUS_SUBMITTED = 2;
+  APPLICATION_STATUS_DATA_CHECK = 3;
+  APPLICATION_STATUS_SCORING = 4;
+  APPLICATION_STATUS_DECISION = 5;
+  APPLICATION_STATUS_APPROVED = 6;
+  APPLICATION_STATUS_COUNTER_OFFER = 7;
+  APPLICATION_STATUS_MANUAL_REVIEW = 8;
+  APPLICATION_STATUS_DECLINED = 9;
+  APPLICATION_STATUS_SIGNED = 10;
+  APPLICATION_STATUS_DISBURSED = 11;
+  APPLICATION_STATUS_CANCELLED = 12;
+}
+
+enum ApplicationOrigin {
+  APPLICATION_ORIGIN_UNSPECIFIED = 0;
+  APPLICATION_ORIGIN_CHAT = 1;
+  APPLICATION_ORIGIN_CREDITS = 2;
+  APPLICATION_ORIGIN_DASHBOARD = 3;
+}
+
+enum FieldSource {
+  FIELD_SOURCE_UNSPECIFIED = 0;
+  FIELD_SOURCE_USER = 1;
+  FIELD_SOURCE_EGR = 2; // «авто» из ЕГРИП/ЕГРЮЛ
+  FIELD_SOURCE_STATEMENT = 3; // «по выписке»
+  FIELD_SOURCE_DOCUMENT = 4; // «из счёта»
+  FIELD_SOURCE_ASSISTANT = 5; // «заполнено ИИ»
+}
+
+enum DecisionOutcome {
+  DECISION_OUTCOME_UNSPECIFIED = 0;
+  DECISION_OUTCOME_APPROVED = 1;
+  DECISION_OUTCOME_COUNTER_OFFER = 2;
+  DECISION_OUTCOME_MANUAL_REVIEW = 3;
+  DECISION_OUTCOME_DECLINED = 4;
+}
+
+enum StepState {
+  STEP_STATE_UNSPECIFIED = 0;
+  STEP_STATE_DONE = 1;
+  STEP_STATE_CURRENT = 2;
+  STEP_STATE_PENDING = 3;
+  STEP_STATE_FAILED = 4;
+}
+
+message Application {
+  string application_id = 1;
+  string number = 2; // «48217»
+  string product_id = 3;
+  string product_name = 4;
+  ApplicationStatus status = 5;
+  int64 amount_kop = 6;
+  int32 term_months = 7;
+  ScheduleType schedule_type = 8;
+  int32 rate_bp = 9;
+  int64 monthly_payment_kop = 10;
+  ApplicationForm form = 11;
+  double autofill_ratio = 12; // 0.8 → «заполнено 80%»
+  Decision decision = 13; // не задано, пока решения нет
+  repeated TimelineStep timeline = 14;
+  repeated string document_ids = 15;
+  Purpose purpose = 16;
+  ApplicationOrigin origin = 17;
+  google.protobuf.Timestamp created_at = 18;
+}
+
+// Короткая форма для дашборда и списков.
+message ApplicationSummary {
+  string application_id = 1;
+  string number = 2;
+  string product_name = 3;
+  ApplicationStatus status = 4;
+  int64 amount_kop = 5;
+}
+
+message ApplicationForm {
+  FormField organization_name = 1;
+  FormField inn = 2;
+  FormField okved = 3;
+  FormField registration_date = 4;
+  FormField avg_monthly_revenue = 5;
+  FormField employees = 6;
+  FormField purpose_text = 7;
+  FormField supplier_name = 8;
+  FormField supplier_inn = 9;
+}
+
+message FormField {
+  string value = 1;
+  FieldSource source = 2; // откуда значение — бейдж в UI
+  bool editable = 3;
+}
+
+message Decision {
+  DecisionOutcome outcome = 1;
+  int64 approved_amount_kop = 2;
+  int32 rate_bp = 3;
+  int64 monthly_payment_kop = 4;
+  repeated Factor reasons = 5;
+  repeated Tip tips = 6;
+  repeated string conditions = 7;
+  string model_version = 8;
+}
+
+message TimelineStep {
+  string code = 1; // submitted | data_check | scoring | decision | signing | disbursement
+  string title = 2;
+  StepState state = 3;
+  google.protobuf.Timestamp at = 4;
+  string note = 5; // «Автоматически, 2 мин.», «Балл 814 из 1000»
+}
+
+message CreateApplicationRequest {
+  string product_id = 1; // валидация: есть в каталоге
+  int64 amount_kop = 2; // валидация: в границах продукта
+  int32 term_months = 3; // валидация: в границах продукта
+  ScheduleType schedule_type = 4;
+  Purpose purpose = 5;
+  ApplicationOrigin origin = 6;
+}
+
+message ListApplicationsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListApplicationsResponse {
+  repeated Application applications = 1;
+  string next_page_token = 2;
+}
+
+message GetApplicationRequest {
+  string application_id = 1;
+}
+
+message UpdateApplicationRequest {
+  string application_id = 1; // path
+  ApplicationForm form = 2; // body
+  google.protobuf.FieldMask update_mask = 3; // query
+}
+
+message SubmitApplicationRequest {
+  string application_id = 1;
+}
+
+message AcceptCounterOfferRequest {
+  string application_id = 1;
+}
+
+message CancelApplicationRequest {
+  string application_id = 1;
+}
+
+message RequestSignOtpRequest {
+  string application_id = 1;
+}
+
+message ConfirmSignRequest {
+  string application_id = 1;
+  string otp_id = 2;
+  string code = 3;
+}
+
+message GetScheduleRequest {
+  string application_id = 1;
+}
+
+message GetScheduleResponse {
+  repeated SchedulePayment schedule = 1;
+}
