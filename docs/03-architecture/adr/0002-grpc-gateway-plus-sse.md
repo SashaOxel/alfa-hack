@@ -17,7 +17,7 @@
 - Стримы описаны как **server-streaming RPC без `google.api.http`** (`ChatService.SendMessage`, `EventsService.Stream`): grpc-gateway их не публикует, а сервисы получают типизированный интерфейс. Имя SSE-события — имя заполненного варианта `oneof` (для `ClientEvent` первое `_` заменяется на `.`: `application_status` → `application.status`).
 - Отказ в доступе к SSE — обычный HTTP 401: interceptor после проверки сессии сразу отправляет заголовки стрима, а хендлер ждёт их перед тем, как ответить `200 text/event-stream`. Ошибка после старта стрима приходит событием `error` (чат) или закрывает поток.
 - На фронте SSE читается через `@microsoft/fetch-event-source` (поддерживает POST и автопереподключение).
-- Payload событий — proto-сообщения `AssistantEvent` и `ClientEvent`, protojson. В OpenAPI (и TypeScript) они попадают как схемы, потому что на них ссылаются унарные методы (`GetMessages` возвращает `Widget`, `Trace`). Отдельный технический RPC `EventSchemaService`, как планировалось, не нужен.
+- Payload событий — proto-сообщения `AssistantEvent` и `ClientEvent`, protojson. ⚠️ **Открыто:** в сгенерированный OpenAPI они **не попадают** (на них не ссылается ни один унарный метод; `ChatMessage`, `Widget`, `Trace` попадают). Чтобы типы дошли до TypeScript, нужен технический RPC `EventSchemaService.Describe` (`GET /api/v1/_schema/events`, возвращает обёртку с обоими сообщениями, фронт его не вызывает), как планировалось в первой редакции. Решение — в [interfaces.md → I-14](../interfaces.md#i-14-фронт).
 
 ## Альтернативы
 | Вариант | Плюсы | Минусы |

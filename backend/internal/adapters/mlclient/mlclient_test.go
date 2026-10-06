@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"net"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -116,23 +117,54 @@ func TestFake_Forecast(t *testing.T) {
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 }
 
+// Допустимые коды категорий — docs/05-ml/features.md#категории-транзакций.
+var (
+	inCategories = []string{
+		"revenue_acquiring", "revenue_sbp", "revenue_b2b", "revenue_marketplace", "revenue_gov",
+		"loan_received", "own_transfer_in", "refund_in", "other_in",
+	}
+	outCategories = []string{
+		"suppliers", "payroll", "taxes", "rent", "debt_service", "leasing", "mfo", "owner_withdrawal",
+		"cash_out", "own_transfer_out", "bank_fees", "marketing", "utilities", "other_out",
+	}
+)
+
 func TestFake_Categorize(t *testing.T) {
 	cases := []struct {
 		item *mlv1.TxInput
 		want string
 	}{
+		// поступления
 		{&mlv1.TxInput{Direction: "in", Channel: "acquiring"}, "revenue_acquiring"},
 		{&mlv1.TxInput{Direction: "in", Channel: "sbp"}, "revenue_sbp"},
+		{&mlv1.TxInput{Direction: "in", Channel: "transfer"}, "revenue_b2b"},
 		{&mlv1.TxInput{Direction: "in", Channel: "transfer", CounterpartyName: "ООО Wildberries"}, "revenue_marketplace"},
+		{&mlv1.TxInput{Direction: "in", Channel: "transfer", CounterpartyName: "УФК по Иркутской области"}, "revenue_gov"},
+		{&mlv1.TxInput{Direction: "in", Purpose: "Предоставление кредита по договору 5"}, "loan_received"},
+		{&mlv1.TxInput{Direction: "in", Purpose: "Перевод между своими счетами"}, "own_transfer_in"},
+		{&mlv1.TxInput{Direction: "in", Purpose: "Возврат средств по счёту 7", Channel: "transfer"}, "refund_in"},
+		{&mlv1.TxInput{Direction: "in", Purpose: "Непонятный платёж"}, "other_in"},
+		// списания
 		{&mlv1.TxInput{Direction: "out", Purpose: "Арендная плата за октябрь"}, "rent"},
 		{&mlv1.TxInput{Direction: "out", Purpose: "Уплата налога УСН"}, "taxes"},
 		{&mlv1.TxInput{Direction: "out", Purpose: "Заработная плата за сентябрь"}, "payroll"},
-		{&mlv1.TxInput{Direction: "out", Channel: "cash"}, "cash_out"},
 		{&mlv1.TxInput{Direction: "out", Purpose: "Оплата по счёту 15"}, "suppliers"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Погашение кредита по договору 12"}, "debt_service"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Лизинговый платёж по договору 3"}, "leasing"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Погашение займа МФО Быстроденьги"}, "mfo"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Перевод на личные нужды"}, "owner_withdrawal"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Перевод между своими счетами"}, "own_transfer_out"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Комиссия за обслуживание счёта"}, "bank_fees"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Оплата рекламы в Яндекс Директ"}, "marketing"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Коммунальные услуги за сентябрь"}, "utilities"},
+		{&mlv1.TxInput{Direction: "out", Purpose: "Прочее"}, "other_out"},
+		// наличные: без признаков — cash_out, но «на личные нужды» — изъятие прибыли
+		{&mlv1.TxInput{Direction: "out", Channel: "cash"}, "cash_out"},
+		{&mlv1.TxInput{Direction: "out", Channel: "cash", Purpose: "Снятие на личные нужды"}, "owner_withdrawal"},
 	}
 	items := make([]*mlv1.TxInput, len(cases))
 	for i, c := range cases {
-		c.item.Id = string(rune('a' + i))
+		c.item.Id = strconv.Itoa(i)
 		items[i] = c.item
 	}
 	resp, err := mlclient.NewFake().Categorize(context.Background(), items)
@@ -140,7 +172,34 @@ func TestFake_Categorize(t *testing.T) {
 	require.Len(t, resp.Items, len(cases))
 	for i, c := range cases {
 		require.Equal(t, c.item.Id, resp.Items[i].Id)
-		require.Equal(t, c.want, resp.Items[i].Category, c.item.Purpose)
+		require.Equal(t, c.want, resp.Items[i].Category, "%s %s", c.item.Direction, c.item.Purpose)
+	}
+}
+
+// Любой ответ fake обязан быть из официального набора: иначе BuildBundle суммирует по несуществующим ключам.
+func TestFake_Categorize_OnlyKnownCategories(t *testing.T) {
+	purposes := []string{"", "кредит", "лизинг займ", "возврат кредита", "налог аренда", "wildberries", "рекламa", "???"}
+	channels := []string{"", "acquiring", "sbp", "transfer", "cash", "card"}
+
+	var items []*mlv1.TxInput
+	for _, dir := range []string{"in", "out", ""} {
+		for _, p := range purposes {
+			for _, ch := range channels {
+				items = append(items, &mlv1.TxInput{Id: "x", Direction: dir, Purpose: p, Channel: ch})
+			}
+		}
+	}
+	resp, err := mlclient.NewFake().Categorize(context.Background(), items)
+	require.NoError(t, err)
+	for i, got := range resp.Items {
+		in := items[i].Direction == "in"
+		allowed := outCategories
+		if in {
+			allowed = inCategories
+		}
+		require.Contains(t, allowed, got.Category, "direction=%q purpose=%q channel=%q", items[i].Direction, items[i].Purpose, items[i].Channel)
+		require.Greater(t, got.Confidence, 0.0)
+		require.LessOrEqual(t, got.Confidence, 1.0)
 	}
 }
 

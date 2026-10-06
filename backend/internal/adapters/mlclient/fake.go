@@ -242,23 +242,43 @@ func fakeRecurring(history []*mlv1.DailyPoint) []*mlv1.RecurringPayment {
 
 // --- Categorize --------------------------------------------------------------
 
-// Категории совпадают с полями MonthAggregate (bundle.proto); настоящий набор задаёт D5.
-var outflowKeywords = []struct {
+// Набор категорий — docs/05-ml/features.md#категории-транзакций (его же сохраняет в
+// bank.transactions.category настоящий категоризатор, D5). Правила проверяются по порядку:
+// выигрывает первое совпавшее, поэтому узкие (лизинг, МФО) стоят раньше широких (кредит).
+type categoryRule struct {
 	category string
 	words    []string
-}{
-	{"rent", []string{"аренд"}},
-	{"payroll", []string{"зарплат", "заработн", "аванс сотруд"}},
-	{"taxes", []string{"налог", "усн", "ндфл", "страховые взнос", "енп"}},
-	{"debt_service", []string{"кредит", "погашение", "лизинг"}},
-	{"mfo", []string{"займ", "мфо", "микрофинанс"}},
-	{"owner_withdrawals", []string{"личные нужды", "снятие владельц"}},
 }
 
+var inflowRules = []categoryRule{
+	{"own_transfer_in", []string{"между своими счетами", "перевод собственных"}},
+	{"refund_in", []string{"возврат"}},
+	{"revenue_marketplace", []string{"wildberries", "ozon", "яндекс маркет", "маркетплейс"}},
+	{"revenue_gov", []string{"уфк", "казначейств", "госконтракт", "государственн"}},
+	{"loan_received", []string{"кредит", "займ"}},
+}
+
+// inflowByChannel — поступление без характерных слов классифицируется по каналу.
 var inflowByChannel = map[string]string{
 	"acquiring": "revenue_acquiring",
 	"sbp":       "revenue_sbp",
 	"transfer":  "revenue_b2b",
+}
+
+var outflowRules = []categoryRule{
+	{"own_transfer_out", []string{"между своими счетами", "перевод собственных"}},
+	{"owner_withdrawal", []string{"личные нужды", "снятие владельц", "на личную карту", "вывод прибыли"}},
+	// наличные без других признаков — cash_out; проверяется после owner_withdrawal (см. categorize)
+	{"leasing", []string{"лизинг"}},
+	{"mfo", []string{"займ", "мфо", "микрофинанс"}},
+	{"debt_service", []string{"кредит", "погашение"}},
+	{"payroll", []string{"зарплат", "заработн", "аванс сотруд"}},
+	{"taxes", []string{"налог", "усн", "ндфл", "страховые взнос", "енп"}},
+	{"rent", []string{"аренд"}},
+	{"utilities", []string{"коммунал", "электроэнерг", "водоснабж", "интернет"}},
+	{"marketing", []string{"реклам", "продвижен", "маркетинг"}},
+	{"bank_fees", []string{"комисси", "обслуживание счёта", "обслуживание счета", "расчётно-кассов"}},
+	{"suppliers", []string{"по счёту", "по счету", "поставк", "товар", "материал"}},
 }
 
 func (*Fake) Categorize(_ context.Context, items []*mlv1.TxInput) (*mlv1.CategorizeResponse, error) {
@@ -273,28 +293,37 @@ func (*Fake) Categorize(_ context.Context, items []*mlv1.TxInput) (*mlv1.Categor
 func categorize(it *mlv1.TxInput) (string, float64) {
 	text := strings.ToLower(it.GetPurpose() + " " + it.GetCounterpartyName())
 	if it.GetDirection() == "in" {
-		if strings.Contains(text, "маркетплейс") || strings.Contains(text, "wildberries") || strings.Contains(text, "ozon") {
-			return "revenue_marketplace", 0.9
-		}
-		if strings.Contains(text, "кредит") || strings.Contains(text, "займ") {
-			return "loans_received", 0.85
+		if cat, ok := firstMatch(inflowRules, text); ok {
+			return cat, 0.9
 		}
 		if cat, ok := inflowByChannel[it.GetChannel()]; ok {
 			return cat, 0.9
 		}
-		return "revenue_b2b", 0.6
+		return "other_in", 0.5
+	}
+
+	// личные переводы владельца важнее канала: снятие наличных «на личные нужды» — это изъятие прибыли
+	if cat, ok := firstMatch(outflowRules[:2], text); ok {
+		return cat, 0.9
 	}
 	if it.GetChannel() == "cash" {
 		return "cash_out", 0.9
 	}
-	for _, rule := range outflowKeywords {
-		for _, w := range rule.words {
+	if cat, ok := firstMatch(outflowRules[2:], text); ok {
+		return cat, 0.9
+	}
+	return "other_out", 0.5
+}
+
+func firstMatch(rules []categoryRule, text string) (string, bool) {
+	for _, r := range rules {
+		for _, w := range r.words {
 			if strings.Contains(text, w) {
-				return rule.category, 0.9
+				return r.category, true
 			}
 		}
 	}
-	return "suppliers", 0.6
+	return "", false
 }
 
 func clamp(v, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, v)) }
