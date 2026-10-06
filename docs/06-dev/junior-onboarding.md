@@ -57,7 +57,7 @@ RETURNING *;
 **4. Логика в сервисе** (`internal/modules/consent/service.go`):
 
 ```go
-func (s *Service) Grant(ctx context.Context, clientID uuid.UUID, source string) (Consent, error) {
+func (s *Service) Grant(ctx context.Context, clientID string, source string) (Consent, error) {
     if !IsKnownSource(source) {
         return Consent{}, ErrUnknownSource
     }
@@ -75,10 +75,8 @@ func (s *Service) Grant(ctx context.Context, clientID uuid.UUID, source string) 
 
 ```go
 func (h *Handler) GrantConsent(ctx context.Context, req *corev1.GrantConsentRequest) (*corev1.GrantConsentResponse, error) {
-    clientID, err := auth.ClientID(ctx) // ТОЛЬКО из контекста, никогда из запроса
-    if err != nil {
-        return nil, status.Error(codes.Unauthenticated, "no session")
-    }
+    clientID := auth.ClientID(ctx) // ТОЛЬКО из контекста, никогда из запроса
+    // Пустая строка невозможна: interceptor не пускает без сессии. Метод публичный — проверяй сам.
     c, err := h.svc.Grant(ctx, clientID, req.GetSource())
     if errors.Is(err, ErrUnknownSource) {
         return nil, status.Errorf(codes.InvalidArgument, "unknown source %q", req.GetSource())
@@ -114,7 +112,7 @@ make migrate-new NAME=create_consents
 
 | ID | Задача | Готово, когда… | Оценка |
 |---|---|---|---|
-| J1 | **Скелет инфраструктуры** (с fullstack): `deploy/docker-compose.yml`, `Makefile`, `.env.example`, миграции схем `core` и `bank` | `make up` поднимает Postgres, core и web; миграции применяются; `make down` чистит | 1,5 |
+| J1 | **Скелет инфраструктуры** (с fullstack): `deploy/docker-compose.yml`, `Makefile`, `.env.example`, миграции схем `core` и `bank`. **[Подробная инструкция](tasks/j1-infrastructure.md)** | `make up` поднимает Postgres и core (web и ml добавятся, когда появятся); миграции применяются при старте; `/readyz` показывает `db: ok`; `make down` останавливает, `make reset-db` чистит | 1,5 |
 | J2 | **Модуль `auth`**: OTP (генерация, хэш, TTL, попытки, лимит запросов), mock SMS (`sms_outbox`), JWT в cookie, middleware `auth.ClientID(ctx)`, `GetMe`, `ListDemoPersonas` | Вход по демо-номеру работает из UI. 4-я неверная попытка блокирует. Без cookie защищённые методы отдают 401 | 2 |
 | J3 | **Адаптер `bankdata`, часть 1**: sqlc-запросы к `bank.*` (профиль, помесячные агрегаты по категориям, дневные ряды, долги, снимки источников) | Для кофейни запросы возвращают цифры, совпадающие с отчётом `make data-report` | 1,5 |
 | J4 | **Адаптер `bankdata`, часть 2**: `BuildBundle(clientID, consentMask, asOf)` по контракту `ClientDataBundle` (пара с ML-1) | **Контрактный тест** зелёный: бандлы персон из Go совпадают с golden-JSON от Python | 1,5 |
